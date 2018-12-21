@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type problem struct {
@@ -36,7 +37,7 @@ func mapLinesToProblems(lines [][]string) []problem {
 	for i, line := range lines {
 		problems[i] = problem{
 			question: line[0],
-			answer:   line[1],
+			answer:   strings.TrimSpace(line[1]),
 		}
 	}
 	return problems
@@ -47,5 +48,16 @@ func main() {
 	flag.Parse()
 	lines := csvReader(csvFileName)
 	problems := mapLinesToProblems(lines)
-	fmt.Println(problems)
+
+	points := 0
+	for i, problem := range problems {
+		fmt.Printf("Problem %v: %v\n", i+1, problem.question)
+		var answer string
+		fmt.Scanf("%s\n", &answer)
+		if answer == problem.answer {
+			points++
+		}
+	}
+
+	fmt.Printf("You scored %v from %v points\n", points, len(problems))
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 type problem struct {
@@ -43,21 +44,42 @@ func mapLinesToProblems(lines [][]string) []problem {
 	return problems
 }
 
-func main() {
+func displayFinalMessage(points, problems int) {
+	fmt.Printf("\nYou scored %v from %v points\n", points, problems)
+}
+
+func parseFlags() (*string, *int) {
 	csvFileName := flag.String("csvFile", "problems.csv", "csvFile defines path to csv file with questions and answers for quiz")
+	timeLimit := flag.Int("limit", 30, "defines time limit for single game")
 	flag.Parse()
+	return csvFileName, timeLimit
+}
+
+func main() {
+	csvFileName, timeLimit := parseFlags()
 	lines := csvReader(csvFileName)
 	problems := mapLinesToProblems(lines)
-
 	points := 0
+	timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
+
 	for i, problem := range problems {
 		fmt.Printf("Problem %v: %v\n", i+1, problem.question)
-		var answer string
-		fmt.Scanf("%s\n", &answer)
-		if answer == problem.answer {
-			points++
+		answerCh := make(chan string)
+		go func() {
+			var answer string
+			fmt.Scanf("%s\n", &answer)
+			answerCh <- answer
+		}()
+
+		select {
+		case <-timer.C:
+			displayFinalMessage(points, len(problems))
+			return
+		case answer := <-answerCh:
+			if answer == problem.answer {
+				points++
+			}
 		}
 	}
-
-	fmt.Printf("You scored %v from %v points\n", points, len(problems))
+	displayFinalMessage(points, len(problems))
 }
